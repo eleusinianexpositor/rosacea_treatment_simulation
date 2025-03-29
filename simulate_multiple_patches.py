@@ -185,7 +185,7 @@ def analyze_and_plot(results: List[Dict[str, Any]],
         # --- Plotting Code ---
         print("Generating plots...")
         plt.style.use('seaborn-v0_8-talk')
-        fig, axes = plt.subplots(3, 1, figsize=(15, 13), sharex=True)
+        fig, axes = plt.subplots(3, 1, figsize=(16, 9), sharex=True)
         late_phase_start_time = t_total_final / 2.0
 
         # Plot 1: Core Inflammatory Mediators
