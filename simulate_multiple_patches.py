@@ -3,79 +3,9 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import time
 from typing import List, Dict, Tuple, Any # For type hinting
-
-# --- Core Model Definition ---
-
-def rosacea_model(y: np.ndarray, t: float, p: Dict[str, float]) -> List[float]:
-    """
-    Defines the system of Ordinary Differential Equations (ODEs) for the
-    rosacea inflammation model treated with an IL-10 microneedle patch.
-
-    Includes:
-    - Persistent chronic stimulus driving inflammation.
-    - IL-10 delivery from a patch (release + degradation).
-    - A persistent downstream effect variable for IL-10 suppression.
-
-    Args:
-        y: Array of current state variable values:
-           [LL37, ProInflamm, NLRP3, VEGF, Erythema, IL10_patch, IL10_tissue, IL10_Effect]
-        t: Current time (days).
-        p: Dictionary of parameter values.
-
-    Returns:
-        List of derivatives (dY/dt) for each state variable.
-    """
-    # Unpack state variables for clarity
-    LL37, ProInflamm, NLRP3, VEGF, Erythema, IL10_patch, IL10_tissue, IL10_Effect = y
-
-    # --- Calculate Rates of Change (Derivatives) ---
-
-    # Chronic stimulus drives inflammation upstream
-    chronic_stimulus = p['k_chronic_stimulus']
-
-    # LL37 Dynamics: Driven by stimulus, decays, suppressed by IL-10 effect
-    dLL37_dt = p['basal_LL37'] + chronic_stimulus \
-               - p['d_LL37'] * LL37 \
-               - p['k_il10_effect_supp_LL37'] * IL10_Effect * LL37
-
-    # ProInflamm Dynamics: Driven by LL37 & NLRP3, decays, suppressed by IL-10 effect
-    dProInflamm_dt = (p['k_LL37_inflamm'] * LL37 + p['k_nlrp3_inflamm'] * NLRP3) \
-                     - p['d_ProInflamm'] * ProInflamm \
-                     - p['k_il10_effect_supp_inflamm'] * IL10_Effect * ProInflamm
-
-    # NLRP3 Dynamics: Activated by LL37, decays
-    dNLRP3_dt = p['k_LL37_nlrp3'] * LL37 - p['d_NLRP3'] * NLRP3
-
-    # VEGF Dynamics: Driven by LL37 & ProInflamm, decays
-    dVEGF_dt = p['k_LL37_vegf'] * LL37 + p['k_inflamm_vegf'] * ProInflamm - p['d_VEGF'] * VEGF
-
-    # Erythema Dynamics: Driven by VEGF & ProInflamm, decays slowly
-    dErythema_dt = p['k_vegf_eryth'] * VEGF + p['k_inflamm_eryth'] * ProInflamm - p['d_Erythema'] * Erythema
-
-    # IL-10 Patch Dynamics: Depleted by release and degradation
-    release_IL10 = p['k_release_IL10'] * IL10_patch
-    degradation_IL10_patch = p['k_degrade_patch_IL10'] * IL10_patch
-    dIL10_patch_dt = -release_IL10 - degradation_IL10_patch
-
-    # IL-10 Tissue Dynamics: Gains from release, decays
-    dIL10_tissue_dt = release_IL10 - p['d_IL10_tissue'] * IL10_tissue
-
-    # IL-10 Effect Dynamics: Produced by IL-10 tissue, decays slowly
-    dIL10_Effect_dt = p['k_produce_IL10_effect'] * IL10_tissue - p['d_IL10_Effect'] * IL10_Effect
-
-    # --- Non-Negativity Constraints (Numerical Stability) ---
-    # Prevent variables from becoming negative due to numerical integration steps
-    if LL37 <= 0 and dLL37_dt < 0: dLL37_dt = 0
-    if ProInflamm <= 0 and dProInflamm_dt < 0: dProInflamm_dt = 0
-    if NLRP3 <= 0 and dNLRP3_dt < 0: dNLRP3_dt = 0
-    if VEGF <= 0 and dVEGF_dt < 0: dVEGF_dt = 0
-    if Erythema <= 0 and dErythema_dt < 0: dErythema_dt = 0
-    if IL10_patch <= 0: IL10_patch = 0; dIL10_patch_dt = 0 # Stop depletion if empty
-    if IL10_tissue <= 0 and dIL10_tissue_dt < 0: dIL10_tissue_dt = 0
-    if IL10_Effect <= 0 and dIL10_Effect_dt < 0: dIL10_Effect_dt = 0
-
-    return [dLL37_dt, dProInflamm_dt, dNLRP3_dt, dVEGF_dt, dErythema_dt,
-            dIL10_patch_dt, dIL10_tissue_dt, dIL10_Effect_dt]
+# Import model and parameters
+from model import rosacea_model
+from parameters import parameters
 
 # --- Simulation Execution Function ---
 
@@ -328,85 +258,45 @@ def analyze_and_plot(results: List[Dict[str, Any]],
     else:
         print("\nNo suitable interval selected for plotting.")
 
-# --- Main Execution Block ---
+# --- Simulation Settings ---
+sim_duration = 60           # Total simulation time (days)
+sim_points_per_day = 100     # Simulation time resolution
+patch_load_il10 = 10.0      # Amount of IL-10 in a fresh patch (arbitrary units)
+intervals_to_test = range(3, 11) # Test intervals from 3 to 10 days
+output_plot_filename = "rosacea_IL10_simulation.png" # File to save plot
 
-if __name__ == "__main__":
+# --- Initial Conditions (start near untreated steady state) ---
+LL37_ss_init = (parameters['basal_LL37'] + parameters['k_chronic_stimulus']) / parameters['d_LL37']
+NLRP3_ss_init = parameters['k_LL37_nlrp3'] * LL37_ss_init / parameters['d_NLRP3']
+ProInflamm_ss_init = (parameters['k_LL37_inflamm'] * LL37_ss_init + parameters['k_nlrp3_inflamm'] * NLRP3_ss_init) / parameters['d_ProInflamm']
+VEGF_ss_init = (parameters['k_LL37_vegf'] * LL37_ss_init + parameters['k_inflamm_vegf'] * ProInflamm_ss_init) / parameters['d_VEGF']
+Erythema_ss_init = (parameters['k_vegf_eryth'] * VEGF_ss_init + parameters['k_inflamm_eryth'] * ProInflamm_ss_init) / parameters['d_Erythema']
 
-    # --- Model Parameters (with rationale comments) ---
-    # Based on biological plausibility, relative timescales, and model tuning.
-    # NOTE: These are illustrative estimates, not precise experimental values.
-    parameters = {
-        # Chronic Stimulus & Basal
-        'k_chronic_stimulus': 0.95, # Represents persistent underlying trigger (microbial, genetic etc.). Value set high relative to LL37 decay to maintain high chronic LL37 levels (~1.2).
-        'basal_LL37': 0.01,         # Represents low-level constitutive production. Assumed small compared to chronic stimulus in disease state.
+initial_conditions = np.array([
+    LL37_ss_init, ProInflamm_ss_init, NLRP3_ss_init, VEGF_ss_init, Erythema_ss_init,
+    0.0,  # IL10_patch (starts empty before first application)
+    0.0,  # IL10_tissue
+    0.0   # IL10_Effect (starts at zero)
+])
 
-        # Decay Rates (1/day) - Inverse related to half-life (t_1/2 = ln(2)/decay_rate)
-        'd_LL37': 0.8,              # Assumes LL37 peptide half-life is moderate (~21 hrs).
-        'd_ProInflamm': 2.5,        # Assumes rapid turnover for pro-inflammatory cytokines (~7 hr half-life).
-        'd_NLRP3': 1.5,             # Represents moderate deactivation/turnover rate of the active inflammasome complex (~11 hr half-life).
-        'd_VEGF': 0.6,              # Assumes VEGF has a longer half-life than inflammatory cytokines (~28 hrs).
-        'd_Erythema': 0.07,         # Represents very slow clinical resolution of redness (t_1/2 ~10 days), ensuring persistence.
-        'd_IL10_tissue': 2.5,       # Assumes rapid clearance/decay for IL-10 molecule in tissue (~7 hr half-life).
-        'd_IL10_Effect': 0.7,       # Decay rate for the downstream effect (t_1/2 ~ 1 day), slower than IL-10 molecule but faster than initial guess.
+# --- Run Evaluation and Plotting ---
+evaluation_results = evaluate_intervals(
+    test_intervals=intervals_to_test,
+    y0=initial_conditions,
+    t_total_eval=sim_duration,
+    pts_per_day_eval=sim_points_per_day,
+    params_eval=parameters,
+    patch_load_eval=patch_load_il10
+)
 
-        # Production/Activation Rates (Relative values tuned for plausible steady state)
-        'k_LL37_inflamm': 1.0,      # Rate ProInflamm production is driven by LL37.
-        'k_nlrp3_inflamm': 0.8,     # Rate ProInflamm production is driven by NLRP3.
-        'k_LL37_nlrp3': 0.5,        # Rate LL37 activates NLRP3.
-        'k_LL37_vegf': 0.2,         # Rate VEGF production is driven by LL37.
-        'k_inflamm_vegf': 0.4,      # Rate VEGF production is driven by ProInflamm cytokines.
-        'k_vegf_eryth': 0.15,       # Rate Erythema score increases due to VEGF.
-        'k_inflamm_eryth': 0.15,    # Rate Erythema score increases due to ProInflamm cytokines.
-        'k_produce_IL10_effect': 1.0, # Rate the downstream effect is generated by IL10_tissue.
+analyze_and_plot(
+    results=evaluation_results,
+    y0=initial_conditions,
+    t_total_final=sim_duration,
+    pts_per_day_final=sim_points_per_day,
+    params_final=parameters,
+    patch_load_final=patch_load_il10,
+    save_filename=output_plot_filename
+)
 
-        # Patch Release & Degradation (1/day)
-        'k_release_IL10': 0.4,      # Release rate from patch (first-order simplification, t_1/2 ~1.7 days). Represents multi-day release goal.
-        'k_degrade_patch_IL10': 0.05,# Estimated degradation rate of IL-10 within hydrogel (t_1/2 ~14 days). Educated guess.
-
-        # Therapeutic Effects (mediated by IL10_Effect)
-        'k_il10_effect_supp_LL37': 1.8,     # Strength effect suppresses LL37. Tuned for potency.
-        'k_il10_effect_supp_inflamm': 1.8,  # Strength effect suppresses ProInflamm. Tuned for potency.
-    }
-
-    # --- Simulation Settings ---
-    sim_duration = 60           # Total simulation time (days)
-    sim_points_per_day = 10     # Simulation time resolution
-    patch_load_il10 = 10.0      # Amount of IL-10 in a fresh patch (arbitrary units)
-    intervals_to_test = range(3, 11) # Test intervals from 3 to 10 days
-    output_plot_filename = "rosacea_IL10_simulation.png" # File to save plot
-
-    # --- Initial Conditions (start near untreated steady state) ---
-    LL37_ss_init = (parameters['basal_LL37'] + parameters['k_chronic_stimulus']) / parameters['d_LL37']
-    NLRP3_ss_init = parameters['k_LL37_nlrp3'] * LL37_ss_init / parameters['d_NLRP3']
-    ProInflamm_ss_init = (parameters['k_LL37_inflamm'] * LL37_ss_init + parameters['k_nlrp3_inflamm'] * NLRP3_ss_init) / parameters['d_ProInflamm']
-    VEGF_ss_init = (parameters['k_LL37_vegf'] * LL37_ss_init + parameters['k_inflamm_vegf'] * ProInflamm_ss_init) / parameters['d_VEGF']
-    Erythema_ss_init = (parameters['k_vegf_eryth'] * VEGF_ss_init + parameters['k_inflamm_eryth'] * ProInflamm_ss_init) / parameters['d_Erythema']
-
-    initial_conditions = np.array([
-        LL37_ss_init, ProInflamm_ss_init, NLRP3_ss_init, VEGF_ss_init, Erythema_ss_init,
-        0.0,  # IL10_patch (starts empty before first application)
-        0.0,  # IL10_tissue
-        0.0   # IL10_Effect (starts at zero)
-    ])
-
-    # --- Run Evaluation and Plotting ---
-    evaluation_results = evaluate_intervals(
-        test_intervals=intervals_to_test,
-        y0=initial_conditions,
-        t_total_eval=sim_duration,
-        pts_per_day_eval=sim_points_per_day,
-        params_eval=parameters,
-        patch_load_eval=patch_load_il10
-    )
-
-    analyze_and_plot(
-        results=evaluation_results,
-        y0=initial_conditions,
-        t_total_final=sim_duration,
-        pts_per_day_final=sim_points_per_day,
-        params_final=parameters,
-        patch_load_final=patch_load_il10,
-        save_filename=output_plot_filename
-    )
-
-    print("\nSimulation complete.")
+print("\nSimulation complete.")

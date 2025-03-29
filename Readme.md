@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This Python script simulates the treatment of chronic rosacea symptoms using a hydrogel-forming microneedle patch that delivers Interleukin-10 (IL-10). The goal is to provide a computational proof-of-concept for this therapeutic strategy and explore the effect of different patch reapplication intervals on controlling inflammation and erythema.
+This Python script simulates the treatment of chronic rosacea symptoms using a hydrogel-forming microneedle patch that delivers Interleukin-10 (IL-10). The goal is to provide a computational proof-of-concept for this therapeutic strategy and explore the effect of different patch application intervals on controlling inflammation and erythema.
 
-## Model Description
+## Our Model (`model.py`)
 
 The simulation uses a system of **Ordinary Differential Equations (ODEs)** to model the average concentrations or activity levels of key biological components over time in a representative skin compartment.
 
@@ -23,7 +23,7 @@ The model tracks the following variables:
 
 **Key Pathways Modeled:**
 
-*   **Chronic Inflammation Drive:** A constant chronic stimulus (`k_chronic_stimulus`) drives the production of LL-37, representing persistent underlying triggers of rosacea.
+*   **Chronic Inflammation Drive:** A constant chronic stimulus (`k_chronic_stimulus`) drives the production of LL-37, representing persistent underlying triggers of rosacea. In real life, this would be equivalent to a dysregulated skin microbiome or excessive UV exposure.
 *   **Inflammatory Cascade:** LL-37 activates NLRP3 and promotes the production of ProInflamm cytokines. NLRP3 also contributes to ProInflamm production.
 *   **Vascular Effects:** LL-37 and ProInflamm cytokines drive the production of VEGF.
 *   **Erythema:** VEGF and ProInflamm cytokines contribute to the simulated Erythema score, which resolves very slowly.
@@ -41,7 +41,7 @@ The model tracks the following variables:
 7.  **Final Simulation & Plotting:** The simulation is run one last time using the selected interval. The results are plotted over the full duration, showing the dynamics of all key variables and indicating patch application times.
 8.  **Save Plot:** The generated plot is automatically saved as a PNG image file (default: `rosacea_IL10_simulation.png`).
 
-## Parameters and Rationale
+## Parameters and Rationale (`parameters.py`)
 
 The parameter values used in the script (`parameters` dictionary in `rosacea_simulation.py`) are estimates derived as follows:
 
@@ -80,27 +80,28 @@ The parameter values used in the script (`parameters` dictionary in `rosacea_sim
 
 ## Interpretation of Results
 
-The simulation provides a computational proof-of-concept for the IL-10 microneedle patch strategy by comparing the effects of treatment against an untreated chronic baseline.
+The simulation provides a computational proof-of-concept for the IL-10 microneedle patch strategy by comparing the effects of treatment against an untreated chronic baseline. Values presented in this simulation are arbitrary and without units, but general trends show that IL-10 hydrogel-forming microneedling patches *have potential* to be effective.
 
-**1. Single Patch Application (`rosacea_single_patch_simulation.png`):**
+#### Single Patch Application (`rosacea_single_patch_simulation.png`):
 
 *   **Initial Suppression:** Applying a single patch at time t=0 causes a noticeable decrease in the levels of key inflammatory mediators (LL37, ProInflamm, NLRP3) and the resulting Erythema score compared to the high levels seen in the untreated steady state.
 *   **Transient Effect:** This suppression is temporary. As the IL-10 is released from the patch, degrades within the patch, and is cleared from the tissue (represented by the rise and fall of `IL-10 (Tissue)` and `IL-10 Effect`), its suppressive action diminishes.
 *   **Return to Baseline:** Consequently, the inflammatory mediators and the Erythema score begin to rise again, trending back towards the high levels characteristic of the untreated chronic condition within the simulation timeframe (e.g., ~28 days).
 *   **Conclusion:** This demonstrates that IL-10 *can* effectively counteract the simulated inflammatory pathways, but a single application provides only temporary relief against the persistent underlying drivers of the simulated disease.
 
-**2. Repeated Patch Application (e.g., 3-day Interval - `rosacea_IL10_simulation.png`):**
+#### Repeated Patch Application (e.g., 3-day Interval - `rosacea_IL10_simulation.png`):
 
 *   **Sustained Control:** Applying fresh patches repeatedly (e.g., every 3 days) prevents the system from fully returning to the high untreated baseline between doses.
 *   **Lower Steady State:** The inflammatory mediators and Erythema score are suppressed and maintained at significantly lower average levels compared to the untreated state. In the example plot (3-day interval), Erythema ends around a mean score of ~0.6-0.7 with room to further decrease, compared to the untreated level of 3.
 *   **Stable Oscillations:** The system reaches a new, oscillating steady state where levels fluctuate mildly around a low baseline in sync with the patch application cycle. The persistent `IL-10 Effect` helps dampen these oscillations compared to models without it. The clinical readout (Erythema) shows very stable control in the long term. In reality, it is possible that consistently reduced LL-37 levels and Erythema would help mitigate the chronic stimuli that continuously driving Rosacea, further decreasing Erythema to eventually treat the disease.
+*   **Potential for Disease Modification (Beyond Current Model):** The current simulation assumes the underlying chronic stimulus (`k_chronic_stimulus`) remains constant. This models effective *symptom control*. However, it is biologically plausible that **sustained, long-term reduction of inflammation in real life could potentially lead to a gradual decrease in this chronic stimulus** (e.g., by altering the skin microbiome or improving neurovascular function). If this were to occur, the required IL-10 effect might lessen over time, potentially allowing for longer application intervals or even leading towards remission (a "cure"), which is beyond the scope of the current model's assumptions.
 *   **Conclusion:** This demonstrates that a strategy of repeated patch application can achieve sustained *control* over the simulated inflammation and its clinical manifestation (Erythema). The chosen interval (determined by the evaluation script) represents a balance between maintaining low inflammation levels and practical application frequency. Considering real-world conditions, it is possible that the treatment will be even more effective, although it must be acknowledged that the simulation is merely an oversimplified proof of concept.
 
-**Overall Proof of Concept:**
+#### Overall Proof of Concept:
 
 Together, these simulations show computationally that:
-a) IL-10 delivered via the patch has the potential to suppress key inflammatory pathways implicated in rosacea (single patch result).
-b) A repeated application strategy can leverage this potential to achieve significant and sustained reduction in simulated disease severity (repeated patch result).
+a) IL-10 delivered via the patch *has the potential* to suppress key inflammatory pathways implicated in rosacea (single patch result).
+b) A repeated application strategy can leverage this potential to achieve *significant and sustained reduction* in simulated disease severity (repeated patch result).
 
 This provides a strong rationale for the therapeutic approach, while acknowledging that the model relies on estimated parameters and simplified kinetics. The results highlight the necessity of repeated dosing to manage this simulated chronic condition effectively.
 
@@ -109,5 +110,5 @@ This provides a strong rationale for the therapeutic approach, while acknowledgi
 *   **Model Simplification:** This is an ODE model assuming a well-mixed compartment; it doesn't capture spatial effects within the skin. Many variables are lumped (e.g., `ProInflamm`). Interactions are simplified (mostly first-order or linear).
 *   **Parameter Uncertainty:** Parameter values are estimates and highly influential. The simulation outcome represents *one possible scenario* based on these estimates. Real-world results may differ.
 *   **Release Kinetics:** Patch release is modeled simply; real hydrogels can have more complex profiles (burst effect, zero-order, etc.).
-*   **Constant Chronic Stimulus:** Assumes the underlying disease drivers are not affected by the IL-10 treatment (models symptom control, not disease modification).
+* **Constant Chronic Stimulus:** The model assumes the underlying disease drivers (represented by `k_chronic_stimulus`) are not reduced by the treatment itself. **This means the simulation primarily models symptom control rather than disease modification or cure.** Modeling a potential cure would require making this stimulus dynamic and dependent on the long-term inflammatory state, adding significant complexity and assumptions.
 *   **Erythema Score:** The simulated score is relative and not directly calibrated to clinical scales (e.g., CEA).
