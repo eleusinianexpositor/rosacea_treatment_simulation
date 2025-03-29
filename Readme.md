@@ -63,7 +63,7 @@ The parameter values used in the script (`parameters` dictionary in `rosacea_sim
 3.  Save the Python code as `rosacea_simulation.py`.
 4.  Run the script from your terminal:
     ```bash
-    python rosacea_simulation.py
+    python simulate_multiple_patches.py
     ```
 
 ## Output
