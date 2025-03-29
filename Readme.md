@@ -4,6 +4,11 @@
 
 This Python script simulates the treatment of chronic rosacea symptoms using a hydrogel-forming microneedle patch that delivers Interleukin-10 (IL-10). The goal is to provide a computational proof-of-concept for this therapeutic strategy and explore the effect of different patch application intervals on controlling inflammation and erythema.
 
+## Files
+*   `model.py`: contains our model
+*   `parameters.py`: contains model parameters
+*   `simulate_single_patch.py`: simulates the effect of applying a single hydrogen-forming microneedling patch
+*   `simulate_multiple_patches.py`: simulates the long-term effect of applying multiple patches over certain reapplication intervals
 ## Our Model (`model.py`)
 
 The simulation uses a system of **Ordinary Differential Equations (ODEs)** to model the average concentrations or activity levels of key biological components over time in a representative skin compartment.
