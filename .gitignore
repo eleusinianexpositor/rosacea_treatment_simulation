@@ -4,4 +4,4 @@ output_corrected.png
 output.png
 output2.png
 .obsidian
-_pycache_
+__pycache__
