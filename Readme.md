@@ -60,7 +60,7 @@ The parameter values used in the script (`parameters` dictionary in `rosacea_sim
     ```bash
     pip install numpy scipy matplotlib
     ```
-3.  Save the Python code as `rosacea_simulation.py`.
+3.  Save the Python code as `simulate_multiple_patches.py`.
 4.  Run the script from your terminal:
     ```bash
     python simulate_multiple_patches.py
